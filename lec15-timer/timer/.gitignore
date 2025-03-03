@@ -1,0 +1,10 @@
+.timer_test.ko.cmd
+.timer_test.mod.o.cmd
+.timer_test.o.cmd
+.tmp_versions/
+Module.symvers
+modules.order
+timer_test.ko
+timer_test.mod.c
+timer_test.mod.o
+timer_test.o

@@ -1,0 +1,11 @@
+.timeofday.ko.cmd
+.timeofday.mod.o.cmd
+.timeofday.o.cmd
+timeofday.ko
+timeofday.mod.c
+timeofday.mod.o
+timeofday.o
+timeofday.c.kp
+.tmp_versions/
+Module.symvers
+modules.order
