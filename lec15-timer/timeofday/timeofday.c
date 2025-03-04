@@ -1,71 +1,61 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
-#include <linux/timekeeping.h>
-#include <linux/ktime.h>
-#include <asm-generic/delay.h>
+#include <linux/timekeeping.h> /* For ktime_get_real_ts64, ktime_get_boottime_ts64 */
+#include <linux/delay.h>       /* For udelay() */
 
-#define PRINT_PREF	"[TIMEOFDAY]: " 
-
-extern void getboottime64(struct timespec64 *ts);
+#define PRINT_PREF "[TIMEOFDAY]: "
 
 static int __init my_mod_init(void)
 {
-	unsigned long seconds;
-	struct timespec64 ts, start, stop;
-	ktime_t kt, start_kt, stop_kt;
+    struct timespec64 ts, start, stop;
+    ktime_t kt, start_kt, stop_kt;
 
-	printk(PRINT_PREF "Entering module.\n");
+    printk(PRINT_PREF "Entering module.\n");
 
-	/* Number of seconds since the epoch (01/01/1970) */
-	seconds = get_seconds();
-	printk("get_seconds() returns %lu\n", seconds);
+    /* Number of seconds since the epoch (01/01/1970) */
+    unsigned long seconds = ktime_get_real_seconds();
+    printk(PRINT_PREF "ktime_get_real_seconds() returns %lu\n", seconds);
 
-	/* Same thing with seconds + nanoseconds using struct timespec */
-	ts = current_kernel_time64();
-	printk(PRINT_PREF "current_kernel_time64() returns: %lu (sec),"
-		"i %lu (nsec)\n", ts.tv_sec, ts.tv_nsec);
+    /* Seconds + nanoseconds using struct timespec64 */
+    ktime_get_real_ts64(&ts);
+    printk(PRINT_PREF "ktime_get_real_ts64() returns: %lld (sec), %ld (nsec)\n",
+           (s64)ts.tv_sec, ts.tv_nsec);
 
-	/* Get the boot time offset */
-	getboottime64(&ts);
-	printk(PRINT_PREF "getboottime64() returns: %lu (sec),"
-		"i %lu (nsec)\n", ts.tv_sec, ts.tv_nsec);
+    /* Get the boot time offset */
+    ktime_get_boottime_ts64(&ts);
+    printk(PRINT_PREF "ktime_get_boottime_ts64() returns: %lld (sec), %ld (nsec)\n",
+           (s64)ts.tv_sec, ts.tv_nsec);
 
-	/* The correct way to print a struct timespec as a single value: */
-	printk(PRINT_PREF "Boot time offset: %lu.%09lu secs\n", ts.tv_sec, ts.tv_nsec);
-	/* Otherwise, just using %lu.%lu transforms this:
-	 * ts.tv_sec  == 10
-	 * ts.tv_nsec == 42
-	 * into: 10.42 rather than 10.000000042
-	 */
-	
-	/* another interface using ktime_t */
-	kt = ktime_get();
-	printk(PRINT_PREF "ktime_get() returns %llu\n", kt.tv64);
+    /* Another interface using ktime_t */
+    kt = ktime_get();
+    printk(PRINT_PREF "ktime_get() returns %lld (nsec)\n", ktime_to_ns(kt));
 
-	/* Subtract two struct timespec */
-	getboottime64(&start);
-	stop = current_kernel_time64();
-	ts = timespec64_sub(stop, start);
-	printk(PRINT_PREF "Uptime: %lu.%09lu secs\n", ts.tv_sec, ts.tv_nsec);
+    /* Subtract two struct timespec64 to get uptime */
+    ktime_get_boottime_ts64(&start);
+    ktime_get_real_ts64(&stop);
+    ts = timespec64_sub(stop, start);
+    printk(PRINT_PREF "Uptime: %lld.%09ld secs\n", (s64)ts.tv_sec, ts.tv_nsec);
 
-	/* measure the execution time of a piece of code */
-	start_kt = ktime_get();
-	udelay(100);
-	stop_kt = ktime_get();
-	
-	kt = ktime_sub(stop_kt, start_kt);
-	printk(PRINT_PREF "Measured execution time: %llu usecs\n", (kt.tv64)/1000);
-	
-	return 0;
+    /* Measure execution time of a piece of code */
+    start_kt = ktime_get();
+    udelay(100); /* Delay for 100 microseconds */
+    stop_kt = ktime_get();
+
+    kt = ktime_sub(stop_kt, start_kt);
+    printk(PRINT_PREF "Measured execution time: %lld usecs\n", ktime_to_us(kt));
+
+    return 0;
 }
 
 static void __exit my_mod_exit(void)
 {
-	printk(PRINT_PREF "Exiting module.\n");
+    printk(PRINT_PREF "Exiting module.\n");
 }
 
 module_init(my_mod_init);
 module_exit(my_mod_exit);
 
 MODULE_LICENSE("GPL");
+MODULE_AUTHOR("LKP");
+MODULE_DESCRIPTION("A kernel module to demonstrate timekeeping functions");
