@@ -3,38 +3,42 @@
 #include <linux/init.h>
 #include <linux/timer.h>
 
-#define PRINT_PREF	"[TIMER_TEST]: " 
+#define PRINT_PREF "[TIMER_TEST]: "
+#define TIMER_TIMEOUT_SEC 2 /* Timeout in seconds */
 
-struct timer_list my_timer;
+/* Static to ensure it persists for the module lifetime */
+static struct timer_list my_timer;
 
-static void my_handler(unsigned long data)
+/* Timer callback function */
+static void my_timer_callback(struct timer_list *t)
 {
-	printk(PRINT_PREF "handler executed!\n");
+    printk(PRINT_PREF "Timer triggered after %d seconds!\n", TIMER_TIMEOUT_SEC);
 }
 
 static int __init my_mod_init(void)
 {
-	printk(PRINT_PREF "Entering module.\n");
+    printk(PRINT_PREF "Entering module.\n");
 
-	/* initializes the timer data structure internal values: */
-	init_timer(&my_timer);
+    /* Initialize and set up the timer with callback */
+    timer_setup(&my_timer, my_timer_callback, 0);
 
-	/* fill out the interesting fields: */
-	my_timer.data = 0;
-	my_timer.function = my_handler;
-	my_timer.expires = jiffies + 2*HZ; /* timeout == 2secs */
-	
-	add_timer(&my_timer);
-	printk(PRINT_PREF "Timer started\n");
+    /* Schedule the timer to fire after 2 seconds */
+    mod_timer(&my_timer, jiffies + msecs_to_jiffies(TIMER_TIMEOUT_SEC * 1000));
+    printk(PRINT_PREF "Timer scheduled to fire in %d seconds.\n", TIMER_TIMEOUT_SEC);
 
-	return 0;
+    return 0;
 }
 
 static void __exit my_mod_exit(void)
 {
-	del_timer(&my_timer);
-	printk(PRINT_PREF "Exiting module.\n");
+    /* Safely delete the timer and wait for any pending execution to complete */
+    del_timer_sync(&my_timer);
+    printk(PRINT_PREF "Timer stopped, exiting module.\n");
 }
 
 module_init(my_mod_init);
 module_exit(my_mod_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("LKP");
+MODULE_DESCRIPTION("A simple timer test kernel module");
