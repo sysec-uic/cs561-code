@@ -1,0 +1,9 @@
+#!/usr/bin/env bpftrace
+
+uprobe:/lib/x86_64-linux-gnu/libc.so.6:malloc { 
+    printf("PID %d (%s) called malloc(size=%llu)\n", pid, comm, arg0); 
+}
+
+uretprobe:/lib/x86_64-linux-gnu/libc.so.6:malloc {
+    printf("PID %d (%s) malloc returned %p\n", pid, comm, retval);
+}

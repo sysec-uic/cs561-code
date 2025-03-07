@@ -1,0 +1,6 @@
+#!/usr/bin/env bpftrace
+
+tracepoint:syscalls:sys_enter_execve
+{
+    printf("Process %s executed: %s\n", comm, str(args->filename));
+}
