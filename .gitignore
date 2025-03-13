@@ -56,4 +56,6 @@ guest_bin.h
 kvm_example
 kvm_host
 
+process
+
 *.tar.gz
